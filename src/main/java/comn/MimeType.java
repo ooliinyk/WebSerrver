@@ -34,21 +34,18 @@ public class MimeType  {
 
   public String lookUp(String extension) {
     if (mimeTypesMap.isEmpty()) {
-      return "Content error.";
+      return "Contention error.";
     } else if (mimeTypesMap.containsKey(extension)) {
       return mimeTypesMap.get(extension).toString();
     }
     return "Content type not found.";
   }
 
-  public String getAllMimeTypes() {
-    if (mimeTypesMap.isEmpty()) {
-      return "Please load a file";
-    }
-    String allMimeTypes = "";
-    for (Map.Entry<String, String> entry : mimeTypesMap.entrySet()) {
-      allMimeTypes += entry.getKey() + ": " + entry.getValue() + "\n";
-    }
-    return allMimeTypes;
+  public Map<String, String> getMimeTypesMap() {
+    return mimeTypesMap;
+  }
+
+  public void setMimeTypesMap(Map<String, String> mimeTypesMap) {
+    this.mimeTypesMap = mimeTypesMap;
   }
 }

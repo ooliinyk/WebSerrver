@@ -10,7 +10,7 @@ import java.util.Map;
 
 
 public class HttpDConfig {
-  private Map<String, List<String>> configurationMap = new HashMap<String, List<String>>();
+  private static Map<String, List<String>> configurationMap = new HashMap<String, List<String>>();
   private BufferedReader reader;
   private String fileName;
 
@@ -68,5 +68,9 @@ public class HttpDConfig {
 
   public void setConfigurationMap(Map<String, List<String>> configurationMap) {
     this.configurationMap = configurationMap;
+  }
+
+  public static String getAccessFileName(){
+    return configurationMap.get("AccessFileName").get(0);
   }
 }

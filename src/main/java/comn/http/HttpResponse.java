@@ -2,11 +2,13 @@ package comn.http;
 
 import comn.HttpDConfig;
 import comn.MimeType;
+import comn.sss.Authentication;
 import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringTokenizer;
 
 
 /**
@@ -22,64 +24,77 @@ public class HttpResponse {
     List<String> headers = new ArrayList<String>();
 
     byte[] body;
+    Authentication authentication = new Authentication();
 
-    public HttpResponse(HttpRequest req) throws IOException {
+    public HttpResponse(HttpRequest req, OutputStream out) throws IOException {
 
-        switch (req.method) {
-            case HEAD:
-                fillHeaders(Status._200);
-                break;
-            case GET:
+//        if(!checkAuthentication(req, out)){
+        if (!checkAuthentication(req, out)){
+            fillHeaders(Status._403);
+            write(out);
+        } else {
 
-                String documentRoot = new HttpDConfig("httpd.conf").getConfigurationMap().get("DocumentRoot").get(0);
-
-                try {
+            switch (req.method) {
+                case HEAD:
                     fillHeaders(Status._200);
-                    File file = new File(documentRoot + req.uri);
-                    System.out.println(documentRoot + req.uri);
-                    if (file.isDirectory()) {
-                        headers.add(ContentType.HTML.toString());
-                        StringBuilder result = new StringBuilder("<html><head><title>Index of ");
-                        result.append(req.uri);
-                        result.append("</title></head><body><h1>Index of ");
-                        result.append(req.uri);
-                        result.append("</h1><hr><pre>");
+                    break;
+                case GET:
 
-                        File[] files = file.listFiles();
-                        for (File subfile : files) {
-                            result.append(" <a href=\"" + subfile.getPath() + "\">" + subfile.getPath() + "</a>\n");
+                    String documentRoot = new HttpDConfig("httpd.conf").getConfigurationMap().get("DocumentRoot").get(0);
+
+                    try {
+                        fillHeaders(Status._200);
+                        File file = new File(documentRoot + req.uri);
+                        System.out.println(documentRoot + req.uri);
+                        if (file.isDirectory()) {
+                            headers.add(ContentType.HTML.toString());
+                            StringBuilder result = new StringBuilder("<html><head><title>Index of ");
+                            result.append(req.uri);
+                            result.append("</title></head><body><h1>Index of ");
+                            result.append(req.uri);
+                            result.append("</h1><hr><pre>");
+
+                            File[] files = file.listFiles();
+                            for (File subfile : files) {
+                                result.append(" <a href=\"" + subfile.getPath() + "\">" + subfile.getPath() + "</a>\n");
+                            }
+                            result.append("<hr></pre></body></html>");
+                            fillResponse(result.toString());
+                        } else if (file.exists()) {
+                            setContentType(req.uri, headers);
+                            fillResponse(getBytes(file));
+                        } else {
+                            log.info("File not found:1" + req.uri);
+                            fillHeaders(Status._404);
+                            fillResponse(Status._404.toString());
                         }
-                        result.append("<hr></pre></body></html>");
-                        fillResponse(result.toString());
-                    } else if (file.exists()) {
-                        setContentType(req.uri, headers);
-                        fillResponse(getBytes(file));
-                    } else {
-                        log.info("File not found:1" + req.uri);
-                        fillHeaders(Status._404);
-                        fillResponse(Status._404.toString());
+                    } catch (Exception e) {
+                        log.error("Response Error", e);
+                        fillHeaders(Status._400);
+                        fillResponse(Status._400.toString());
                     }
-                } catch (Exception e) {
-                    log.error("Response Error", e);
+
+                    break;
+                case POST:
+//                    String fileSeparator = System.getProperty("file.separator");
+//                    String documentRoot = new HttpDConfig("httpd.conf").getConfigurationMap().get("DocumentRoot").get(0);
+//                    FileWriter fstream = new FileWriter(documentRoot + fileSeparator + "post.html");// fileWriter will write to this
+//                    BufferedWriter postToFile = new BufferedWriter(fstream);
+
+//
+                    break;
+                case PUT:
+
+                    break;
+                case UNRECOGNIZED:
                     fillHeaders(Status._400);
                     fillResponse(Status._400.toString());
-                }
-
-                break;
-            case POST:
-                break;
-            case PUT:
-
-                break;
-            case UNRECOGNIZED:
-                fillHeaders(Status._400);
-                fillResponse(Status._400.toString());
-                break;
-            default:
-                fillHeaders(Status._501);
-                fillResponse(Status._501.toString());
+                    break;
+                default:
+                    fillHeaders(Status._501);
+                    fillResponse(Status._501.toString());
+            }
         }
-
     }
 
     private byte[] getBytes(File file) throws IOException {
@@ -136,35 +151,49 @@ public class HttpResponse {
             log.error("ContentType not found: " + e, e);
         }
     }
+    public Boolean checkAuthentication(HttpRequest req, OutputStream out) throws FileNotFoundException, IOException{
+// check for Forbiden and Unauthorized
 
-//    private void processPUT(HttpRequest myRequest, OutputStream out) throws IOException{
-//
-//
+        return true;}
 //        String fileSeparator = System.getProperty("file.separator");
-//        String documentRoot =  new HttpDConfig("httpd.conf").getConfigurationMap().get("DocumentRoot").get(0);
-//        File PUTFile = new File(myRequest.uri);
-//        if(PUTFile.exists()){
-//            FileWriter fstream = new FileWriter(PUTFile);// fileWriter will write to this
-//            BufferedWriter putToFile = new BufferedWriter(fstream);
+//        String documentRoot = new HttpDConfig("httpd.conf").getConfigurationMap().get("DocumentRoot").get(0);
+////        String documentRoot = getDocumentRoot();
+//        String file_path = HttpDConfig.getAccessFileName() ;
+//        if(file_path.contains("private")){
+//            return false;
+//        }
 //
-//            if(myRequest.messageBody.isEmpty()){
-//                setStatus(204);
-//                writeOutput(out,myRequest,new File(documentRoot + fileSeparator + NO_CONTENT_FILE));
-//            }
-//            else{
-//                for(int i = 0;i<=myRequest.messageBody.size();i++){
-//                    String temp = myRequest.messageBody.get(i);
-//                    putToFile.write(temp);
-//                    setStatus(201);
-//                    writeOutput(out,myRequest,PUTFile);
+//        StringTokenizer auSt = new StringTokenizer(file_path);
+//
+//        String temp = auSt.nextToken("/");
+//
+//        while(auSt.hasMoreElements()){
+//            if(authentication.authIsNeeded(temp)){
+//
+//                //check if user has already included authentication
+//                if(true){
+//                   // ok
+//                    }
+//                    else{
+//                      //forbidden false
+//
+//                    fillHeaders(Status._401);
+//                        write(out);//block User
+//                    break;
+//                    }
+//                }
+//
+//                else{
+//                //forbidden false
+//                fillHeaders(Status._401);
+//
+//                System.out.println("Exception");
+//
 //                }
 //            }
-//
-//            putToFile.close();
+//            temp = temp +"/" + auSt.nextToken("/");
+//        return false;
 //        }
-//        else{
-//            statusCode = 404;
-//            writeOutput(out, myRequest, new File(documentRoot + fileSeparator + PAGE_NOT_FOUND_FILE));
-//        }
-//    }
+//        return true;
+//    }}
 }

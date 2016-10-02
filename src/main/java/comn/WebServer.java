@@ -12,7 +12,7 @@ public class WebServer extends Thread {
 
 	private static Logger log = Logger.getLogger(WebServer.class);
 
-	public static int DEFAULT_PORT =8096;
+	public static int DEFAULT_PORT;
 
 	private static final int N_THREADS = 3;
 
@@ -50,7 +50,7 @@ public class WebServer extends Thread {
 			}
 		}
 		HttpDConfig httpDConfig = new HttpDConfig("httpd.conf");
-//		DEFAULT_PORT= Integer.valueOf(httpDConfig.getConfigurationMap().get("Listen").get(0));
+		DEFAULT_PORT= Integer.valueOf(httpDConfig.getConfigurationMap().get("Listen").get(0));
 
 		return DEFAULT_PORT;
 

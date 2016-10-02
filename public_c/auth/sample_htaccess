@@ -1,0 +1,4 @@
+AuthUserFile /Users/user/Desktop/WebSerrver/public_c/auth/htpasswd
+AuthName "User name and password needed"
+AuthType Basic 
+require valid-user 

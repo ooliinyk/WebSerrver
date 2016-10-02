@@ -1,0 +1,448 @@
+<html>
+<head>
+    <title>Tetris</title>
+    <meta charset='utf-8' />
+</head>
+<body>
+<div align="center"><canvas  width='200' height='480' id='canvas' >Update Browser</canvas></div>
+<script>
+    var e = document.getElementById('canvas');
+    var gc = e.getContext('2d');
+
+
+    var FIGURE = [];
+
+
+    FIGURE['O'] = [];
+    FIGURE['I'] = [];
+    FIGURE['S'] = [];
+    FIGURE['Z'] = [];
+    FIGURE['L'] = [];
+    FIGURE['J'] = [];
+    FIGURE['T'] = [];
+
+    FIGURE['O'][0] = [0, 0, 0, 0, 0];
+    FIGURE['O'][1] = [0, 0, 0, 0, 0];
+    FIGURE['O'][2] = [0, 0, 1, 1, 0];
+    FIGURE['O'][3] = [0, 0, 1, 1, 0];
+    FIGURE['O'][4] = [0, 0, 0, 0, 0];
+
+    FIGURE['I'][0] = [0, 0, 2, 0, 0];
+    FIGURE['I'][1] = [0, 0, 2, 0, 0];
+    FIGURE['I'][2] = [0, 0, 2, 0, 0];
+    FIGURE['I'][3] = [0, 0, 2, 0, 0];
+    FIGURE['I'][4] = [0, 0, 0, 0, 0];
+
+    FIGURE['S'][0] = [0, 0, 0, 0, 0];
+    FIGURE['S'][1] = [0, 0, 3, 3, 0];
+    FIGURE['S'][2] = [0, 3, 3, 0, 0];
+    FIGURE['S'][3] = [0, 0, 0, 0, 0];
+    FIGURE['S'][4] = [0, 0, 0, 0, 0];
+
+    FIGURE['Z'][0] = [0, 0, 0, 0, 0];
+    FIGURE['Z'][1] = [0, 4, 4, 0, 0];
+    FIGURE['Z'][2] = [0, 0, 4, 4, 0];
+    FIGURE['Z'][3] = [0, 0, 0, 0, 0];
+    FIGURE['Z'][4] = [0, 0, 0, 0, 0];
+
+    FIGURE['J'][0] = [0, 0, 0, 0, 0];
+    FIGURE['J'][1] = [0, 0, 5, 0, 0];
+    FIGURE['J'][2] = [0, 0, 5, 0, 0];
+    FIGURE['J'][3] = [0, 0, 5, 5, 0];
+    FIGURE['J'][4] = [0, 0, 0, 0, 0];
+
+
+    FIGURE['L'][0] = [0, 0, 0, 0, 0];
+    FIGURE['L'][1] = [0, 0, 6, 0, 0];
+    FIGURE['L'][2] = [0, 0, 6, 0, 0];
+    FIGURE['L'][3] = [0, 6, 6, 0, 0];
+    FIGURE['L'][4] = [0, 0, 0, 0, 0];
+
+    FIGURE['T'][0] = [0, 0, 0, 0, 0];
+    FIGURE['T'][1] = [0, 0, 0, 0, 0];
+    FIGURE['T'][2] = [0, 7, 7, 7, 0];
+    FIGURE['T'][3] = [0, 0, 7, 0, 0];
+    FIGURE['T'][4] = [0, 0, 0, 0, 0];
+
+    var T_EMPTY		= 0;
+    var T_FIGURE	= 1;
+    var T_HEAP		= 2;
+
+
+    var MOVE_UP 	= 1;
+    var MOVE_DN 	= 2;
+    var MOVE_LT 	= 3;
+    var MOVE_RT 	= 4;
+
+    function figureTypeObject(c, r)
+    {
+        this.color 		= c;
+        this.rotatable 	= r;
+        this.data		= [];
+    }
+
+    function screenObject(w, h)
+    {
+        this.width 		= w;
+        this.height 	= h;
+        this.cell		= [];
+        this.updFlag	= true;
+        this.color		= "#FFFFFF";
+
+        for(var i = 0; i <= this.width; i++)
+            this.cell[i] = Array(this.height);
+
+        for(var j = 0; j <= this.height; j++)
+            for( i = 0;i <= this.width; i++)
+                this.cell[i][j] = new cellObject();
+
+        this.invalidate= function()
+        {
+            this.updFlag	= true;
+        }
+
+        this.isValidXY = function(x, y)
+        {
+            if(x >= 0 && x <= this.width && y >= 0 && y <= this.height)
+                return true;
+            return false;
+        }
+
+        this.check = function()
+        {
+            var lineFull;
+            for(var y = 0; y <= this.height; y++)
+            {
+                lineFull = true;
+                for(var x = 0; x <= this.width; x++)
+                {
+                    if(this.cell[x][y].type != T_HEAP)
+                        lineFull = false;
+                }
+                if(lineFull)
+                    for(i = y; i > 0; i--)
+                        for(var x = 0; x <= this.width; x++)
+                        {
+                            this.cell[x][i].type = this.cell[x][i - 1].type
+                            this.cell[x][i].dirty = true;
+                            gc.fillStyle='#FFFFFF';
+                            gc.fillRect(x*10,y*10,10,10);
+                        }
+
+            }
+        }
+
+        this.update = function()
+        {
+            if(this.updFlag)
+            {
+                for(var y = 0; y <= this.height; y++)
+                {
+                    for(var x = 0; x <= this.width; x++)
+                    {
+                        if(this.cell[x][y].dirty)
+                        {
+                            switch(this.cell[x][y].type)
+                            {
+                                case T_EMPTY 	:
+                                    gc.fillStyle="#000000";
+                                    gc.strokeStyle="#6666FF";
+                                    gc.fillRect(x*10,y*10,10,10);
+                                    gc.strokeRect(x*10,y*10,10,10);
+                                    break;
+                                case T_FIGURE 	:
+                                case T_HEAP 	:
+                                    switch(this.cell[x][y].color)
+                                    {
+                                        case 1: gc.fillStyle="#FF0000"; break;
+                                        case 2: gc.fillStyle="#00FF00"; break;
+                                        case 3: gc.fillStyle="#0000FF"; break;
+                                        case 4: gc.fillStyle="#FF00FF"; break;
+                                        case 5: gc.fillStyle="#00FFFF"; break;
+                                        case 6: gc.fillStyle="#FFFF00"; break;
+                                        case 7: gc.fillStyle="#ABCDEF"; break;
+                                    }
+
+                                    gc.fillRect(x*10,y*10,10,10);
+                                    break;
+                            }
+                            this.cell[x][y].dirty = false;
+                        }
+                    }
+                }
+                this.updFlag = false;
+            }
+        }
+    }
+
+    function cellObject()
+    {
+        this.type = T_EMPTY;
+        this.dirty = true;
+        this.color;
+    }
+
+
+
+
+    var COLLISION_ABSENT		= 0b0000;
+    var COLLISION_WITH_BORDER	= 0b0001;
+    var COLLISION_WITH_FLOOR	= 0b0010;
+    var COLLISION_WITH_HEAP		= 0b0100;
+
+    function figureObject(a, x, y, s)
+    {
+        this.array 		= a;
+        this.data		= undefined;
+        this.x			= x;
+        this.y			= y;
+        this.color		= undefined;
+        this.scr		= s;
+        this.updFlag	= true;
+        this.accelFall	= false;
+
+        this.generate = function()
+        {
+            var types = ['O','I','S','Z','L','J','T'];
+            this.x = Math.round(this.scr.width / 2);
+            this.y = -1;
+
+            if(!this.array)
+                console.log('Figures array not defined! ');
+            var index = Math.round(Math.random() * (types.length - 1));
+            index = types[index];
+            this.data 	= this.array[index];
+            //this.data 	= this.array['I'];
+            if(this.checkCollision(this.x - 1, this.y, this.data) & COLLISION_WITH_HEAP)
+            {
+                return false;
+            }
+            this.place();
+            this.accelFall	= false;
+            return true;
+        }
+
+        this.setDir = function(d)
+        {
+            this.dir = d;
+        }
+
+        this.moveLeft = function()
+        {
+            if(! (this.checkCollision(this.x - 1, this.y, this.data) & (COLLISION_WITH_HEAP | COLLISION_WITH_BORDER)))
+            {
+                this.remove();
+                this.x --;
+                this.place();
+                this.scr.invalidate();
+            }
+        }
+
+        this.moveRight = function()
+        {
+            if(! (this.checkCollision(this.x + 1, this.y, this.data) & (COLLISION_WITH_HEAP | COLLISION_WITH_BORDER)))
+            {
+                this.remove();
+                this.x ++;
+                this.place();
+                this.scr.invalidate();
+            }
+        }
+
+        this.moveDown = function()
+        {
+            if(! (this.checkCollision(this.x, this.y + 1, this.data) & (COLLISION_WITH_HEAP | COLLISION_WITH_FLOOR)))
+            {
+                this.remove();
+                this.y ++;
+                this.place();
+                this.scr.invalidate();
+                return true;
+            }
+            else
+            {
+                this.toHeap();
+                this.scr.check();
+                return false;
+            }
+        }
+
+        this.checkCollision = function(x, y, m)
+        {
+            for(i = -2; i <= 2; i++)
+                for(var j = -2; j <= 2; j++)
+                {
+                    if((x + j) < 0 			&& m[i + 2][j + 2])
+                        return COLLISION_WITH_BORDER;
+                    if((x + j) > this.scr.width	&& m[i + 2][j + 2])
+                        return COLLISION_WITH_BORDER;
+                    if((y + i) > this.scr.height	&& m[i + 2][j + 2])
+                        return COLLISION_WITH_FLOOR;
+                    if(this.scr.isValidXY(x + i, y + j))
+                        if(m[j + 2][i + 2] && this.scr.cell[x + i][y + j].type == T_HEAP)
+                            return COLLISION_WITH_HEAP;
+                }
+            return COLLISION_ABSENT;
+        }
+
+
+
+        this.remove = function()
+        {
+            for(i = -2; i <= 2; i++)
+                for(var j = -2; j <= 2; j++)
+                {
+                    if(this.scr.isValidXY(this.x + i, this.y + j) && this.data[j + 2][i + 2])
+                    {
+                        this.scr.cell[this.x + i][this.y + j].type	= T_EMPTY;
+                        this.scr.cell[this.x + i][this.y + j].dirty	= true;
+                    }
+                }
+        }
+
+        this.place = function()
+        {
+            for(i = -2; i <= 2; i++)
+                for(var j = -2; j <= 2; j++)
+                {
+                    if(this.scr.isValidXY(this.x + i, this.y + j) && this.data[j + 2][i + 2])
+                    {
+                        this.scr.cell[this.x + i][this.y + j].type	= T_FIGURE;
+                        this.scr.cell[this.x + i][this.y + j].color	= this.data[j + 2][i + 2];
+                        this.scr.cell[this.x + i][this.y + j].dirty	= true;
+                    }
+                }
+        }
+
+        this.toHeap	= function()
+        {
+            for(i = -2; i <= 2; i++)
+                for(var j = -2; j <= 2; j++)
+                {
+                    if(this.scr.isValidXY(this.x + i, this.y + j) && this.data[j + 2][i + 2])
+                    {
+                        this.scr.cell[this.x + i][this.y + j].type	= T_HEAP;
+                        this.scr.cell[this.x + i][this.y + j].color	= this.data[j + 2][i + 2];
+                        //this.scr.cell[this.x + i][this.y + j].dirty	= true;
+                    }
+                }
+
+        }
+
+        this.rotate = function()
+        {
+            var t = [];
+            for(var i = 0; i < 5; i++)
+                t[i] = [0, 0, 0, 0, 0];
+
+            for(i = 0; i < 5; i++)
+                for(var j = 0; j < 5; j++)
+                {
+                    t[j][i] = this.data[i][4-j];
+                }
+            if(! (this.checkCollision(this.x, this.y, t) & (COLLISION_WITH_HEAP | COLLISION_WITH_BORDER | COLLISION_WITH_FLOOR)))
+            {
+                this.remove();
+                this.data = t;
+                this.place();
+                this.scr.invalidate();
+            }
+
+        }
+    }
+
+    var KEY_LEFT	= 37;
+    var KEY_UP		= 38;
+    var KEY_RIGHT	= 39;
+    var KEY_DOWN	= 40;
+    var KEY_ENTER	= 13;
+    var KEY_SPACE	= 32;
+    var KEY_ESC		= 27;
+    var KEY_NONE	= 0;
+
+
+
+    function matrixDraw(m, x, y)
+    {
+
+        for(var i = 0; i < 5; i++)
+            for(var j = 0; j < 5; j++)
+            {
+                if(m[j][i])
+                    gc.fillStyle="#000000";
+                else
+                    gc.fillStyle="#6666FF";
+                gc.fillRect((i + x) * 10, (j + y) * 10, 10, 10);
+
+            }
+    }
+
+    function matrixRotate(m)
+    {
+        var t = [];
+        for(var i = 0; i < 5; i++)
+            t[i] = [0, 0, 0, 0, 0];
+
+        for(i = 0; i < 5; i++)
+            for(var j = 0; j < 5; j++)
+            {
+                t[j][i] = m[i][4-j];
+            }
+        return t;
+    }
+
+    var screen = new screenObject(12, 30);
+    var figure = new figureObject(FIGURE, screen.width/2, 2, screen);
+    figure.generate();
+
+    document.body.style.backgroundColor = "black";
+    window.onkeydown = function(event)
+    {
+        switch(event.keyCode)
+        {
+
+            case KEY_LEFT: 		if(!gamePause)figure.moveLeft();		break;
+            case KEY_RIGHT: 	if(!gamePause)figure.moveRight();		break;
+            case KEY_ENTER:	    gamePause =~gamePause; 					break;
+            case KEY_DOWN: 		if(!gamePause)figure.accelFall =true;	break;
+            case KEY_SPACE:		if(!gamePause)figure.rotate();			break;
+            case KEY_ESC:		clearInterval(gameIntervalId);
+                windwo.refresh();
+                break;
+
+        }
+        //console.log(event.keyCode);
+    }
+
+    var gameSpeed 			= 20;
+    var gameTimer			= 0;
+    var gameIntervalId		= 0;
+    var gamePause	= false;
+
+    function main()
+    {
+        if(gameTimer > (1000 / gameSpeed) || figure.accelFall)
+        {
+            gameTimer = 0;
+            if(!figure.moveDown())
+            {
+                if(!figure.generate())
+                {
+                    alert('Game Over');
+                    clearInterval(gameIntervalId);
+                }
+            }
+        }
+        if(!gamePause)
+            gameTimer++;
+
+
+        screen.update();
+    }
+
+
+    //matrixDraw(figure.data, 1, 1);
+    gameIntervalId = setInterval(main, 1);
+</script>
+</body>
+</html>

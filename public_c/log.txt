@@ -1,0 +1,14 @@
+# Web Server: Poushali Banerjee, Lee Gemma Fu-Sun
+# Version: 1.0
+# Date: Чт, 29 сен 2016 16:33:49 EEST
+# Fields: remotehost rfc931 authuser [date] "request" status bytes
+#	remotehost:	Remote hostname (or IP number if DNS hostname is not available, or if DNSLookup is Off.
+#	rfc931:		The remote logname of the user.
+#	authuser: 	The username as which the user has authenticated himself.
+#	[date]:		Date and time of the request.
+#	"request":	The request line exactly as it came from the client.
+#	status:		The HTTP status code returned to the client.
+#	bytes:		The content-length of the document transferred.
+
+0:0:0:0:0:0:0:1 - remotehost rfc931 authuser [Чт, 29 сен 2016 16:33:49 EEST] "GET /index.html HTTP/1.1" 200 90
+0:0:0:0:0:0:0:1 - remotehost rfc931 authuser [Чт, 29 сен 2016 16:34:05 EEST] "GET /index.html HTTP/1.1" 200 90

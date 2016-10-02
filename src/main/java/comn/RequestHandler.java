@@ -23,7 +23,7 @@ public class RequestHandler implements Runnable {
 	public void run() {
 		try {
 			HttpRequest req = new HttpRequest(socket.getInputStream());
-			HttpResponse res = new HttpResponse(req);
+			HttpResponse res = new HttpResponse(req,socket.getOutputStream());
 			res.write(socket.getOutputStream());
 			socket.close();
 		} catch (Exception e) {

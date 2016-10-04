@@ -12,10 +12,10 @@ public class Logger {
 	java.util.logging.Logger logger;
 
 	public Logger(String name) {
-//		logger.set
+
 		logger = java.util.logging.Logger.getLogger(name);
 		logger.setLevel(Level.INFO);
-//		java.util.logging.
+
 		logger.addHandler(new ConsoleHandler());
 	}
 
